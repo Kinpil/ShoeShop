@@ -1,0 +1,224 @@
+/* === ОБЩИЕ СТИЛИ === */
+body {
+    background-color: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* === НАВИГАЦИЯ === */
+.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    padding: 12px 0;
+}
+.navbar-brand {
+    font-size: 1.6rem;
+    transition: transform 0.2s;
+}
+.navbar-brand:hover {
+    transform: scale(1.02);
+}
+.navbar-brand .brand-icon {
+    font-size: 1.8rem;
+    margin-right: 8px;
+}
+.navbar-brand .brand-shoe {
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+.navbar-brand .brand-shop {
+    font-weight: 300;
+    color: #ffc107;
+}
+.user-name {
+    color: #fff !important;
+    font-weight: 500;
+}
+.admin-link {
+    color: #ffc107 !important;
+    font-weight: bold;
+}
+.admin-link:hover {
+    color: #ffed4a !important;
+}
+
+/* === КАРТОЧКИ ТОВАРОВ === */
+.product-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+    height: 100%;
+    margin-bottom: 30px;
+}
+.product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+.product-card .card-img-top {
+    border-radius: 15px 15px 0 0;
+    height: 200px;
+    object-fit: cover;
+    background-color: #e9ecef;
+}
+.product-card .card-body {
+    padding: 1.25rem;
+}
+.product-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+/* Скидка больше 45% — зелёная рамка */
+.discount-high {
+    border: 3px solid #28a745 !important;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+}
+.discount-high .old-price {
+    color: #dc3545 !important;
+}
+.discount-high .new-price {
+    color: #28a745 !important;
+    font-weight: 700;
+}
+
+/* === НЕТ В НАЛИЧИИ === */
+.out-of-stock {
+    background-color: #d1ecf1;
+    border: 2px solid #17a2b8;
+}
+.out-of-stock .card-title {
+    color: #0c5460;
+}
+
+/* === ЦЕНЫ === */
+.old-price {
+    text-decoration: line-through;
+    color: #dc3545;
+    font-size: 0.9rem;
+}
+.new-price {
+    color: #28a745;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+/* === УВЕДОМЛЕНИЯ === */
+.alert {
+    animation: slideDown 0.5s ease-out;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === ПОДВАЛ === */
+.footer {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #fff;
+    padding: 25px 0;
+    margin-top: 40px;
+}
+.footer a {
+    color: #ffc107;
+    text-decoration: none;
+}
+.footer a:hover {
+    color: #ffed4a;
+}
+
+/* === КНОПКИ === */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+.btn-success {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(56, 239, 125, 0.4);
+}
+.btn-danger {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+}
+.btn-secondary {
+    border-radius: 8px;
+    font-weight: 600;
+}
+.btn-outline-success {
+    border-radius: 8px;
+}
+
+/* === КНОПКА "В КОРЗИНУ" === */
+.btn-cart {
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #333;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-cart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(247, 151, 30, 0.4);
+    color: #333;
+}
+
+/* === АДАПТИВНОСТЬ === */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    .product-card .card-img-top {
+        height: 150px;
+    }
+    .product-card .card-title {
+        font-size: 1rem;
+    }
+    .new-price {
+        font-size: 1rem;
+    }
+}
+@media (max-width: 576px) {
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    .product-card .card-img-top {
+        height: 130px;
+    }
+}
