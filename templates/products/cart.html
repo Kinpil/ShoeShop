@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">🛒 Корзина</h1>
+
+{% if items %}
+    <div class="row">
+        <div class="col-md-8">
+            {% for item in items %}
+                <div class="card mb-3">
+                    <div class="row g-0">
+                        <div class="col-md-3">
+                            {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" class="img-fluid rounded-start" alt="{{ item.product.name }}" style="height: 150px; object-fit: cover; width: 100%;">
+                            {% else %}
+                                <img src="{% static 'images/no-image.png' %}" class="img-fluid rounded-start" alt="Нет фото" style="height: 150px; object-fit: cover; width: 100%;">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ item.product.name }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        Категория: {{ item.product.category.name }}<br>
+                                        Производитель: {{ item.product.manufacturer.name }}
+                                    </small>
+                                </p>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <!-- Цена со скидкой -->
+                                    {% if item.product.discount > 0 %}
+                                        <span class="old-price">{{ item.product.price }} ₽</span>
+                                        <span class="new-price">{{ item.product.get_price_with_discount|floatformat:2 }} ₽</span>
+                                        <span class="badge bg-danger">-{{ item.product.discount }}%</span>
+                                    {% else %}
+                                        <span class="new-price">{{ item.product.price }} ₽</span>
+                                    {% endif %}
+                                    
+                                    <span class="text-muted">×</span>
+                                    
+                                    <form method="post" action="{% url 'products:cart_update' item.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control form-control-sm" style="width: 60px; display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-primary">Обновить</button>
+                                    </form>
+                                    
+                                    <!-- Итоговая цена за позицию -->
+                                    <span class="fw-bold">
+                                        {% if item.product.discount > 0 %}
+                                            {{ item.product.get_price_with_discount|floatformat:2 }} ₽
+                                        {% else %}
+                                            {{ item.product.price }} ₽
+                                        {% endif %}
+                                    </span>
+                                    
+                                    <a href="{% url 'products:cart_remove' item.id %}" class="btn btn-sm btn-danger">Удалить</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Итого</h5>
+                    <p class="card-text display-6">{{ total }} ₽</p>
+                    <a href="{% url 'products:order_create' %}" class="btn btn-success w-100">
+                        Оформить заказ
+                    </a>
+                    <a href="/" class="btn btn-secondary w-100 mt-2">Продолжить покупки</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center">
+        <div class="alert alert-info">
+            <h4>🛒 Корзина пуста</h4>
+            <p>Добавьте товары, чтобы они появились здесь.</p>
+            <a href="/" class="btn btn-primary">Перейти к товарам</a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

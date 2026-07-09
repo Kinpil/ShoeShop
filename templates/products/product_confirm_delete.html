@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Удаление товара{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-{% if has_orders %}warning{% else %}danger{% endif %}">
+            <div class="card-header bg-{% if has_orders %}warning{% else %}danger{% endif %} text-white">
+                <h4 class="mb-0">
+                    {% if has_orders %}⚠️{% else %}🗑️{% endif %} 
+                    {% if has_orders %}Невозможно удалить{% else %}Подтверждение удаления{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if has_orders %}
+                    <div class="alert alert-warning">
+                        <strong>Внимание!</strong> Товар <strong>"{{ product.name }}"</strong> присутствует в заказах, поэтому его нельзя удалить.
+                    </div>
+                    <p>Товар числится в следующих заказах:</p>
+                    <ul>
+                        {% for item in product.orderitem_set.all %}
+                            <li>Заказ #{{ item.order.id }} — {{ item.quantity }} шт.</li>
+                        {% empty %}
+                            <li>Нет заказов</li>
+                        {% endfor %}
+                    </ul>
+                    <a href="/" class="btn btn-secondary">🔙 Вернуться</a>
+                {% else %}
+                    <p>Вы действительно хотите удалить товар:</p>
+                    <h5 class="text-danger">{{ product.name }}</h5>
+                    
+                    <div class="mt-3">
+                        <p><strong>Категория:</strong> {{ product.category.name }}</p>
+                        <p><strong>Цена:</strong> {{ product.price }} ₽</p>
+                        <p><strong>На складе:</strong> {{ product.stock }}</p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="submit" class="btn btn-danger">🗑️ Удалить</button>
+                            <a href="/" class="btn btn-secondary">Отмена</a>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

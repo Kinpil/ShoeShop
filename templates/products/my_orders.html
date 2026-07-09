@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Мои заказы{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">📦 Мои заказы</h1>
+
+{% if orders %}
+    <div class="row">
+        {% for order in orders %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Заказ #{{ order.id }}</h5>
+                        <p class="card-text">
+                            <strong>Дата:</strong> {{ order.created_at|date:"d.m.Y H:i" }}<br>
+                            <strong>Сумма:</strong> {{ order.total_price }} ₽<br>
+                            <strong>Статус:</strong>
+                            <span class="badge 
+                                {% if order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'processing' %}bg-info
+                                {% elif order.status == 'shipped' %}bg-primary
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% elif order.status == 'cancelled' %}bg-danger
+                                {% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </p>
+                        <a href="{% url 'products:order_detail' order.id %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-eye"></i> Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center">
+        <div class="alert alert-info">
+            <h4>📭 У вас пока нет заказов</h4>
+            <p>Перейдите в магазин и сделайте свой первый заказ!</p>
+            <a href="/" class="btn btn-primary">Перейти к товарам</a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

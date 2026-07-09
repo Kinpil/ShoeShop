@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="product-form">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Ошибка!</strong> Пожалуйста, исправьте следующие ошибки:
+                            <ul>
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Наименование товара *</label>
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Категория *</label>
+                            <div class="d-flex gap-2">
+                                {{ form.category }}
+                                <a href="/admin/products/category/add/" target="_blank" class="btn btn-sm btn-outline-success" title="Добавить новую категорию">➕</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.manufacturer.id_for_label }}" class="form-label">Производитель *</label>
+                            <div class="d-flex gap-2">
+                                {{ form.manufacturer }}
+                                <a href="/admin/products/manufacturer/add/" target="_blank" class="btn btn-sm btn-outline-success" title="Добавить нового производителя">➕</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.supplier.id_for_label }}" class="form-label">Поставщик *</label>
+                        <div class="d-flex gap-2">
+                            {{ form.supplier }}
+                            <a href="/admin/products/supplier/add/" target="_blank" class="btn btn-sm btn-outline-success" title="Добавить нового поставщика">➕</a>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Описание товара</label>
+                        {{ form.description }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.price.id_for_label }}" class="form-label">Цена *</label>
+                            {{ form.price }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.unit.id_for_label }}" class="form-label">Единица измерения *</label>
+                            {{ form.unit }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.stock.id_for_label }}" class="form-label">Количество на складе *</label>
+                            {{ form.stock }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.discount.id_for_label }}" class="form-label">Скидка (%)</label>
+                            {{ form.discount }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">Фото товара</label>
+                        {% if product and product.image %}
+                            <div class="mb-2">
+                                <img src="{{ product.image.url }}" alt="Текущее фото" style="max-height: 150px;">
+                                <p class="text-muted small">Текущее фото</p>
+                            </div>
+                        {% endif %}
+                        {{ form.image }}
+                        <div class="form-text">Рекомендуемый размер: 300x200 пикселей</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" id="save-btn">💾 Сохранить</button>
+                        <a href="/" class="btn btn-secondary" id="cancel-btn">Отмена</a>
+                    </div>
+                </form>
+                
+                <!-- Подсказка -->
+                <div class="mt-3 p-2 bg-light rounded">
+                    <small class="text-muted">
+                        📌 Чтобы добавить новую категорию, производителя или поставщика, 
+                        нажмите на кнопку <strong>➕</strong> рядом с соответствующим полем.
+                        Новое окно откроется в админке.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Получаем ID товара из URL
+        const urlParts = window.location.pathname.split('/');
+        let productId = null;
+        for (let i = 0; i < urlParts.length; i++) {
+            if (urlParts[i] === 'edit' && i + 1 < urlParts.length) {
+                productId = urlParts[i + 1];
+                break;
+            }
+        }
+        
+        // Если это страница редактирования, сохраняем ID в localStorage
+        if (productId && !isNaN(productId)) {
+            localStorage.setItem('editing_product_id', productId);
+            console.log('✅ Редактируется товар ID:', productId);
+        }
+        
+        // Настраиваем BroadcastChannel для отправки сообщения при закрытии вкладки
+        let channel = null;
+        try {
+            channel = new BroadcastChannel('edit_channel');
+        } catch (e) {
+            // Игнорируем, если браузер не поддерживает
+        }
+        
+        // Отправляем сообщение при закрытии вкладки
+        window.addEventListener('beforeunload', function() {
+            if (productId && channel) {
+                channel.postMessage({
+                    type: 'edit_closed',
+                    productId: productId
+                });
+                console.log('📤 Отправлено сообщение о закрытии вкладки для ID:', productId);
+            }
+        });
+        
+        // Очищаем localStorage при сохранении
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                localStorage.removeItem('editing_product_id');
+                console.log('🗑️ localStorage очищен (сохранение)');
+            });
+        }
+        
+        // Очищаем localStorage при отмене
+        const cancelBtn = document.getElementById('cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function() {
+                localStorage.removeItem('editing_product_id');
+                console.log('🗑️ localStorage очищен (отмена)');
+            });
+        }
+    });
+</script>
+{% endblock %}

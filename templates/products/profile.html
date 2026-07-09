@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">👤 Личный кабинет</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-user-circle" style="font-size: 80px; color: #667eea;"></i>
+                <h4 class="mt-3">{{ user.full_name|default:user.username }}</h4>
+                <p class="text-muted">{{ user.username }}</p>
+                <p>
+                    <span class="badge 
+                        {% if user.role == 'admin' %}bg-danger
+                        {% elif user.role == 'manager' %}bg-warning
+                        {% elif user.role == 'client' %}bg-success
+                        {% else %}bg-secondary
+                        {% endif %}">
+                        {{ user.get_role_display }}
+                    </span>
+                </p>
+                <div class="card-footer">
+                    <a href="{% url 'products:profile_edit' %}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-edit"></i> Редактировать профиль
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📋 Информация о профиле</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Имя пользователя:</strong> {{ user.username }}</p>
+                <p><strong>ФИО:</strong> {{ user.full_name|default:"Не указано" }}</p>
+                <p><strong>Email:</strong> {{ user.email|default:"Не указан" }}</p>
+                <p><strong>Дата рождения:</strong> {{ user.birth_date|date:"d.m.Y"|default:"Не указана" }}</p>
+                <p><strong>Роль:</strong> {{ user.get_role_display }}</p>
+                <p><strong>Дата регистрации:</strong> {{ user.date_joined|date:"d.m.Y H:i" }}</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">📦 Последние заказы</h5>
+            </div>
+            <div class="card-body">
+                {% if orders %}
+                    {% for order in orders %}
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                            <div>
+                                <strong>Заказ #{{ order.id }}</strong>
+                                <small class="text-muted"> от {{ order.created_at|date:"d.m.Y H:i" }}</small>
+                                <br>
+                                <span class="badge 
+                                    {% if order.status == 'pending' %}bg-warning
+                                    {% elif order.status == 'processing' %}bg-info
+                                    {% elif order.status == 'shipped' %}bg-primary
+                                    {% elif order.status == 'delivered' %}bg-success
+                                    {% elif order.status == 'cancelled' %}bg-danger
+                                    {% endif %}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="h5">{{ order.total_price }} ₽</span>
+                                <a href="{% url 'products:order_detail' order.id %}" class="btn btn-sm btn-primary ms-2">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div class="mt-3">
+                        <a href="{% url 'products:my_orders' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Все заказы
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted">У вас пока нет заказов.</p>
+                    <a href="/" class="btn btn-primary">Перейти к товарам</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

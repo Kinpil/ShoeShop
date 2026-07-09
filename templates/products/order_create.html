@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">📦 Оформление заказа</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Товары в заказе</h5>
+            </div>
+            <div class="card-body">
+                {% for item in items %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <strong>{{ item.product.name }}</strong>
+                            <small class="text-muted"> × {{ item.quantity }}</small>
+                            {% if item.product.discount > 0 %}
+                                <span class="badge bg-danger ms-2">-{{ item.product.discount }}%</span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">
+                                {% if item.product.discount > 0 %}
+                                    <span class="text-decoration-line-through text-danger">{{ item.product.price }} ₽</span>
+                                    → <span class="text-success fw-bold">{{ item.product.get_price_with_discount|floatformat:2 }} ₽</span>
+                                {% else %}
+                                    {{ item.product.price }} ₽
+                                {% endif %}
+                            </small>
+                        </div>
+                        <span>
+                            {% if item.product.discount > 0 %}
+                                {{ item.product.get_price_with_discount|floatformat:2 }} ₽
+                            {% else %}
+                                {{ item.product.price }} ₽
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <strong>Итого:</strong>
+                    <span class="h5">{{ total }} ₽</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Данные для доставки</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="order-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Адрес доставки *</label>
+                        <textarea name="address" id="address" class="form-control" rows="3" required placeholder="Введите адрес доставки"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Телефон *</label>
+                        <input type="text" name="phone" id="phone" class="form-control" required placeholder="+7 (XXX) XXX-XX-XX" maxlength="15">
+                        <div class="form-text">Введите номер телефона (только цифры, не более 12 символов)</div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        Подтвердить заказ
+                    </button>
+                    <a href="{% url 'products:cart' %}" class="btn btn-secondary w-100 mt-2">← Вернуться в корзину</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Валидация телефона -->
+<script>
+    document.getElementById('order-form').addEventListener('submit', function(e) {
+        const phoneInput = document.getElementById('phone');
+        const phoneValue = phoneInput.value.replace(/\D/g, '');
+        
+        if (phoneValue.length === 0 || phoneValue.length > 12) {
+            e.preventDefault();
+            alert('Введите корректный номер телефона (только цифры, не более 12 символов)');
+            phoneInput.focus();
+            return false;
+        }
+    });
+    
+    document.getElementById('phone').addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9+\-() ]/g, '');
+    });
+</script>
+{% endblock %}
