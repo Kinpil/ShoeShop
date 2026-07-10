@@ -1,0 +1,9 @@
+asgiref==3.8.1
+backports.zoneinfo==0.2.1
+django==4.2.30
+django-extensions==3.2.3
+pillow==10.4.0
+pymysql==1.1.2
+sqlparse==0.5.5
+typing-extensions==4.13.2
+tzdata==2026.2
