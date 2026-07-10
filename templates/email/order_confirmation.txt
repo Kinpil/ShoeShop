@@ -1,0 +1,20 @@
+👟 ShoeShop — Подтверждение заказа
+
+Здравствуйте, {{ user.full_name|default:user.username }}!
+
+Ваш заказ #{{ order.id }} успешно оформлен.
+
+Статус: {{ order.get_status_display }}
+Дата: {{ order.created_at|date:"d.m.Y H:i" }}
+Адрес доставки: {{ order.address }}
+Телефон: {{ order.phone }}
+
+Товары в заказе:
+{% for item in items %}
+- {{ item.product.name }} × {{ item.quantity }} = {{ item.get_total }} ₽
+{% endfor %}
+
+Итого: {{ order.total_price }} ₽
+
+Спасибо за покупку!
+С уважением, команда ShoeShop.

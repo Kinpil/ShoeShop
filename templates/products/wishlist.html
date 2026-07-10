@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Избранное{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">❤️ Избранное</h1>
+
+{% if products %}
+    <div class="row g-4">
+        {% for product in products %}
+            <div class="col-md-4 col-lg-3">
+                <div class="card product-card">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <img src="{% static 'images/no-image.png' %}" class="card-img-top" alt="Нет фото" style="height: 200px; object-fit: cover;">
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <a href="{% url 'products:product_detail' product.id %}" class="text-decoration-none text-dark">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                        </a>
+                        
+                        <div class="price">
+                            {% if product.discount > 0 %}
+                                <span class="old-price">{{ product.price }} ₽</span>
+                                <span class="new-price">{{ product.get_price_with_discount|floatformat:2 }} ₽</span>
+                                <span class="badge bg-danger ms-2">-{{ product.discount }}%</span>
+                            {% else %}
+                                <span class="new-price">{{ product.price }} ₽</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-2 d-flex gap-2">
+                            <a href="{% url 'products:cart_add' product.id %}" class="btn btn-sm btn-cart flex-grow-1">
+                                <i class="fas fa-shopping-cart"></i> В корзину
+                            </a>
+                            <a href="{% url 'products:wishlist_remove' product.id %}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-heart-broken"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center">
+        <div class="alert alert-info">
+            <h4>💔 У вас пока нет избранных товаров</h4>
+            <p>Добавляйте товары в избранное, чтобы не потерять их!</p>
+            <a href="/" class="btn btn-primary">Перейти к товарам</a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

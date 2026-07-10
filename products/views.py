@@ -5,14 +5,23 @@ from django.contrib import messages
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from PIL import Image
-from .models import Product, Category, Manufacturer, Supplier, OrderItem, Cart, CartItem, Order
-from .forms import ProductForm
+from .models import Product, Category, Manufacturer, Supplier, OrderItem, Cart, CartItem, Order, Review, Wishlist
+from .forms import ProductForm, ReviewForm
 import os
+import io
 from django.conf import settings
 from io import BytesIO
 from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 
 def product_list(request):
@@ -128,10 +137,15 @@ def product_edit(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     
     if request.method == 'POST':
+        # ОТЛАДКА: выводим в терминал, что пришло в запросе
+        print('🔍 POST данные:', request.POST)
+        print('📁 FILES данные:', request.FILES)
+        
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             product = form.save(commit=False)
             if 'image' in request.FILES:
+                # Удаляем старое фото, если оно есть
                 if product.image:
                     old_image_path = os.path.join(settings.MEDIA_ROOT, str(product.image))
                     if os.path.exists(old_image_path):
@@ -140,13 +154,16 @@ def product_edit(request, product_id):
             product.save()
             messages.success(request, f'Товар "{product.name}" успешно обновлен!')
             return redirect('products:product_list')
+        else:
+            print('❌ Форма не валидна:', form.errors)
     else:
         form = ProductForm(instance=product)
     
     return render(request, 'products/product_form.html', {
-        'form': form, 
+        'form': form,
         'title': 'Редактирование товара',
-        'product': product
+        'product': product,
+        'product_id': product_id,
     })
 
 
@@ -263,6 +280,16 @@ def order_create(request):
         messages.warning(request, 'Корзина пуста!')
         return redirect('products:cart')
     
+    # Проверяем наличие товаров на складе
+    out_of_stock_items = []
+    for item in items:
+        if item.quantity > item.product.stock:
+            out_of_stock_items.append(f'{item.product.name} (доступно: {item.product.stock})')
+    
+    if out_of_stock_items:
+        messages.error(request, f'Невозможно оформить заказ. Товаров нет в наличии: {", ".join(out_of_stock_items)}')
+        return redirect('products:cart')
+    
     if request.method == 'POST':
         address = request.POST.get('address', '').strip()
         phone = request.POST.get('phone', '').strip()
@@ -306,6 +333,7 @@ def order_create(request):
             
             total_with_discount += discounted_price * item.quantity
             
+            # Уменьшаем количество на складе
             product = item.product
             product.stock -= item.quantity
             product.save()
@@ -313,6 +341,7 @@ def order_create(request):
         order.total_price = total_with_discount
         order.save()
         
+        # Очищаем корзину
         items.delete()
         
         messages.success(request, f'Заказ #{order.id} успешно оформлен!')
@@ -383,6 +412,103 @@ def order_manage(request, order_id):
     return redirect('products:order_detail', order_id=order.id)
 
 
+# === PDF ===
+
+@login_required
+def order_pdf(request, order_id):
+    """Генерация PDF-файла заказа"""
+    order = get_object_or_404(Order, id=order_id)
+    
+    if request.user.role == 'client' and order.user != request.user:
+        messages.error(request, 'У вас нет доступа к этому заказу!')
+        return redirect('products:my_orders')
+    
+    font_path = os.path.join(settings.BASE_DIR, 'static', 'fonts', 'DejaVuSans.ttf')
+    
+    if os.path.exists(font_path):
+        pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
+        use_font = 'DejaVuSans'
+    else:
+        use_font = 'Helvetica'
+    
+    buffer = io.BytesIO()
+    
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    c.setFont(use_font, 18)
+    c.drawString(50, height - 50, 'ShoeShop')
+    c.setFont(use_font, 10)
+    c.drawString(50, height - 70, 'Интернет-магазин обуви')
+    
+    c.line(50, height - 80, width - 50, height - 80)
+    
+    y = height - 110
+    c.setFont(use_font, 14)
+    c.drawString(50, y, f'Заказ № {order.id}')
+    y -= 20
+    c.setFont(use_font, 11)
+    c.drawString(50, y, f'Дата: {order.created_at.strftime("%d.%m.%Y %H:%M")}')
+    y -= 16
+    c.drawString(50, y, f'Статус: {order.get_status_display()}')
+    y -= 16
+    c.drawString(50, y, f'Покупатель: {order.user.full_name or order.user.username}')
+    y -= 16
+    c.drawString(50, y, f'Адрес доставки: {order.address}')
+    y -= 16
+    c.drawString(50, y, f'Телефон: {order.phone}')
+    y -= 25
+    
+    items = order.orderitem_set.all()
+    
+    c.setFont(use_font, 11)
+    c.drawString(50, y, '№')
+    c.drawString(80, y, 'Товар')
+    c.drawString(320, y, 'Кол-во')
+    c.drawString(380, y, 'Цена')
+    c.drawString(450, y, 'Сумма')
+    y -= 10
+    
+    c.line(50, y + 5, width - 50, y + 5)
+    y -= 12
+    
+    c.setFont(use_font, 10)
+    total = 0
+    i = 1
+    for item in items:
+        subtotal = item.quantity * item.price_at_order
+        total += subtotal
+        
+        c.drawString(50, y, str(i))
+        c.drawString(80, y, item.product.name[:30])
+        c.drawString(320, y, str(item.quantity))
+        c.drawString(380, y, f'{item.price_at_order:.2f} руб.')
+        c.drawString(450, y, f'{subtotal:.2f} руб.')
+        
+        y -= 18
+        i += 1
+        
+        if y < 50:
+            c.showPage()
+            y = height - 50
+            c.setFont(use_font, 10)
+    
+    y -= 5
+    c.line(50, y + 10, width - 50, y + 10)
+    y -= 15
+    c.setFont(use_font, 13)
+    c.drawString(380, y, f'Итого: {total:.2f} руб.')
+    
+    c.setFont(use_font, 9)
+    c.drawString(50, 50, 'Спасибо за покупку!')
+    c.drawString(50, 35, '© 2026 ShoeShop. Все права защищены.')
+    
+    c.save()
+    buffer.seek(0)
+    
+    return FileResponse(buffer, as_attachment=True, filename=f'Заказ_{order.id}.pdf')
+
+
 # === ПРОФИЛЬ ===
 
 @login_required
@@ -422,6 +548,82 @@ def profile_edit(request):
     return render(request, 'products/profile_edit.html', {
         'user': request.user
     })
+
+
+# === ОТЗЫВЫ ===
+
+@login_required
+def product_detail(request, product_id):
+    """Страница товара с отзывами"""
+    product = get_object_or_404(Product, id=product_id)
+    reviews = product.reviews.all()
+    average_rating = product.get_average_rating()
+    reviews_count = product.get_reviews_count()
+    
+    user_review = None
+    if request.user.is_authenticated:
+        user_review = Review.objects.filter(product=product, user=request.user).first()
+    
+    if request.method == 'POST':
+        if user_review:
+            messages.warning(request, 'Вы уже оставили отзыв на этот товар!')
+            return redirect('products:product_detail', product_id=product.id)
+        
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = product
+            review.user = request.user
+            review.save()
+            messages.success(request, 'Спасибо за ваш отзыв!')
+            return redirect('products:product_detail', product_id=product.id)
+    else:
+        form = ReviewForm()
+    
+    context = {
+        'product': product,
+        'reviews': reviews,
+        'average_rating': average_rating,
+        'reviews_count': reviews_count,
+        'user_review': user_review,
+        'form': form,
+    }
+    return render(request, 'products/product_detail.html', context)
+
+
+# === ИЗБРАННОЕ ===
+
+@login_required
+def wishlist_view(request):
+    """Отображение избранного"""
+    wishlist, created = Wishlist.objects.get_or_create(user=request.user)
+    products = wishlist.products.all()
+    return render(request, 'products/wishlist.html', {'products': products})
+
+
+@login_required
+def wishlist_add(request, product_id):
+    """Добавление товара в избранное"""
+    product = get_object_or_404(Product, id=product_id)
+    wishlist, created = Wishlist.objects.get_or_create(user=request.user)
+    
+    if product in wishlist.products.all():
+        messages.info(request, f'Товар "{product.name}" уже в избранном!')
+    else:
+        wishlist.products.add(product)
+        messages.success(request, f'Товар "{product.name}" добавлен в избранное!')
+    
+    return redirect(request.META.get('HTTP_REFERER', 'products:product_list'))
+
+
+@login_required
+def wishlist_remove(request, product_id):
+    """Удаление товара из избранного"""
+    product = get_object_or_404(Product, id=product_id)
+    wishlist = get_object_or_404(Wishlist, user=request.user)
+    wishlist.products.remove(product)
+    messages.success(request, f'Товар "{product.name}" удалён из избранного!')
+    return redirect(request.META.get('HTTP_REFERER', 'products:product_list'))
 
 
 def resize_image(image):

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Product, Category, Manufacturer, Supplier
+from .models import Product, Category, Manufacturer, Supplier, Review
 
 
 class ProductForm(forms.ModelForm):
@@ -37,4 +37,18 @@ class ProductForm(forms.ModelForm):
             'stock': 'Количество на складе',
             'discount': 'Действующая скидка (%)',
             'image': 'Фото товара',
+        }
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['rating', 'text']
+        widgets = {
+            'rating': forms.Select(attrs={'class': 'form-select'}),
+            'text': forms.Textarea(attrs={'rows': 4, 'class': 'form-control', 'placeholder': 'Напишите ваш отзыв...'}),
+        }
+        labels = {
+            'rating': 'Оценка',
+            'text': 'Текст отзыва',
         }

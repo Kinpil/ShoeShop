@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Левая колонка — фото -->
+    <div class="col-md-5">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+        {% else %}
+            <img src="{% static 'images/no-image.png' %}" class="img-fluid rounded" alt="Нет фото">
+        {% endif %}
+    </div>
+    
+    <!-- Правая колонка — информация о товаре -->
+    <div class="col-md-7">
+        <h1>{{ product.name }}</h1>
+        
+        <!-- Рейтинг -->
+        <div class="mb-2">
+            <span class="h4">
+                {% if average_rating > 0 %}
+                    {% for i in "12345"|make_list %}
+                        {% if forloop.counter <= average_rating %}
+                            <i class="fas fa-star text-warning"></i>
+                        {% else %}
+                            <i class="far fa-star text-warning"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="text-muted ms-2">{{ average_rating|floatformat:1 }} / 5</span>
+                {% else %}
+                    <span class="text-muted">Нет оценок</span>
+                {% endif %}
+            </span>
+            <span class="text-muted">({{ reviews_count }} отзывов)</span>
+        </div>
+        
+        <p class="text-muted">
+            Категория: {{ product.category.name }}<br>
+            Производитель: {{ product.manufacturer.name }}<br>
+            Поставщик: {{ product.supplier.name }}
+        </p>
+        
+        <p>{{ product.description }}</p>
+        
+        <!-- Цена -->
+        <div class="price mb-3">
+            {% if product.discount > 0 %}
+                <span class="old-price h4">{{ product.price }} ₽</span>
+                <span class="new-price h3">{{ product.get_price_with_discount|floatformat:2 }} ₽</span>
+                <span class="badge bg-danger ms-2">-{{ product.discount }}%</span>
+                {% if product.discount > 45 %}
+                    <span class="badge bg-success ms-1">🔥 Суперскидка!</span>
+                {% endif %}
+            {% else %}
+                <span class="new-price h3">{{ product.price }} ₽</span>
+            {% endif %}
+        </div>
+        
+        <div class="mt-2">
+            <span class="badge {% if product.stock > 0 %}bg-success{% else %}bg-warning{% endif %}">
+                В наличии: {{ product.stock }}
+            </span>
+            <span class="badge bg-secondary">{{ product.unit }}</span>
+        </div>
+        
+        <!-- Кнопки -->
+        <div class="mt-3">
+            {% if user.is_authenticated %}
+                <a href="{% url 'products:cart_add' product.id %}" class="btn btn-success">
+                    <i class="fas fa-shopping-cart"></i> В корзину
+                </a>
+            {% endif %}
+            
+            {% if user.is_authenticated and user.role == 'admin' %}
+                <a href="{% url 'products:product_edit' product.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Редактировать
+                </a>
+            {% endif %}
+            
+            <a href="{% url 'products:product_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- === ОТЗЫВЫ === -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3>Отзывы ({{ reviews_count }})</h3>
+        <hr>
+        
+        <!-- Форма для отзыва -->
+        {% if user.is_authenticated %}
+            {% if user_review %}
+                <div class="alert alert-info">
+                    Вы уже оставили отзыв на этот товар.
+                </div>
+            {% else %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5>Написать отзыв</h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="{{ form.rating.id_for_label }}" class="form-label">Оценка</label>
+                                {{ form.rating }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.text.id_for_label }}" class="form-label">Текст отзыва</label>
+                                {{ form.text }}
+                            </div>
+                            <button type="submit" class="btn btn-primary">Отправить отзыв</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-info">
+                <a href="{% url 'login' %}">Войдите</a>, чтобы оставить отзыв.
+            </div>
+        {% endif %}
+        
+        <!-- Список отзывов -->
+        {% if reviews %}
+            {% for review in reviews %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>{{ review.user.username }}</strong>
+                                <span class="ms-2">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+                            <small class="text-muted">{{ review.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <p class="mt-2">{{ review.text }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">Пока нет отзывов. Будьте первым!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

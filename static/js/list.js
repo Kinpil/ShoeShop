@@ -52,7 +52,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // === ОБЩЕНИЕ МЕЖДУ ВКЛАДКАМИ (для редактирования) ===
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализируем канал для общения между вкладками
+    // === ОБНОВЛЕНИЕ КНОПОК НА ГЛАВНОЙ СТРАНИЦЕ ===
+    function updateEditButtons() {
+        const currentEditId = localStorage.getItem('editing_product_id');
+        const editButtons = document.querySelectorAll('.edit-btn');
+        
+        editButtons.forEach(button => {
+            const productId = button.dataset.productId;
+            const parent = button.parentNode;
+            
+            // Удаляем старые сообщения
+            const oldMessage = parent.querySelector('.editing-message');
+            if (oldMessage) oldMessage.remove();
+            
+            // Показываем кнопку
+            button.style.display = 'inline-block';
+            
+            // Если этот товар редактируется
+            if (currentEditId && currentEditId === productId) {
+                button.style.display = 'none';
+                const message = document.createElement('span');
+                message.className = 'badge bg-warning text-dark ms-2 editing-message';
+                message.textContent = '⏳ Редактируется';
+                parent.appendChild(message);
+            }
+        });
+    }
+    
+    // === ПРИ КЛИКЕ НА КНОПКУ РЕДАКТИРОВАНИЯ ===
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const productId = this.dataset.productId;
+            localStorage.setItem('editing_product_id', productId);
+            updateEditButtons();
+        });
+    });
+    
+    // === СЛУШАЕМ СООБЩЕНИЯ ОТ ДРУГИХ ВКЛАДОК ===
     let channel = null;
     try {
         channel = new BroadcastChannel('edit_channel');
@@ -65,34 +101,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentEditId = localStorage.getItem('editing_product_id');
                 if (currentEditId === closedProductId) {
                     localStorage.removeItem('editing_product_id');
-                    location.reload();
+                    updateEditButtons();
                 }
             }
         };
     }
     
-    const editButtons = document.querySelectorAll('.edit-btn');
-    const currentEditId = localStorage.getItem('editing_product_id');
-    
-    editButtons.forEach(button => {
-        const productId = button.dataset.productId;
-        
-        if (currentEditId && currentEditId === productId) {
-            button.style.display = 'none';
-            let message = button.parentNode.querySelector('.editing-message');
-            if (!message) {
-                message = document.createElement('span');
-                message.className = 'badge bg-warning text-dark ms-2 editing-message';
-                message.textContent = '⏳ Редактируется';
-                button.parentNode.appendChild(message);
-            }
-        }
-        
-        button.addEventListener('click', function(e) {
-            localStorage.setItem('editing_product_id', productId);
-        });
-    });
-    
+    // === ПРИ ЗАКРЫТИИ ВКЛАДКИ (редактирование) ===
     window.addEventListener('beforeunload', function() {
         const isEditPage = window.location.pathname.includes('/edit/');
         if (isEditPage) {
@@ -103,6 +118,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     productId: productId
                 });
             }
+            localStorage.removeItem('editing_product_id');
+        }
+    });
+    
+    // === ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ===
+    updateEditButtons();
+    
+    // === ПРИ ПЕРЕКЛЮЧЕНИИ ВКЛАДОК ===
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            updateEditButtons();
         }
     });
 });

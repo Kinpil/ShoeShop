@@ -151,3 +151,9 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+
+# === НАСТРОЙКИ EMAIL ===
+
+# Временно отключаем отправку писем (ни в терминал, ни по-настоящему)
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@shoeshop.com'

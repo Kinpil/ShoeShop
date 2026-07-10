@@ -114,63 +114,103 @@
         </div>
     </div>
 </div>
+
+<!-- Скрытый элемент для передачи ID товара -->
+{% if product_id %}
+    <div id="product-id-data" data-product-id="{{ product_id }}" style="display:none;"></div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Получаем ID товара из URL
-        const urlParts = window.location.pathname.split('/');
-        let productId = null;
-        for (let i = 0; i < urlParts.length; i++) {
-            if (urlParts[i] === 'edit' && i + 1 < urlParts.length) {
-                productId = urlParts[i + 1];
-                break;
-            }
-        }
+        // === ПОЛУЧАЕМ ID ТОВАРА ИЗ DATA-АТРИБУТА ===
+        var productIdElement = document.getElementById('product-id-data');
+        var productIdValue = productIdElement ? productIdElement.dataset.productId : null;
         
-        // Если это страница редактирования, сохраняем ID в localStorage
-        if (productId && !isNaN(productId)) {
-            localStorage.setItem('editing_product_id', productId);
-            console.log('✅ Редактируется товар ID:', productId);
-        }
-        
-        // Настраиваем BroadcastChannel для отправки сообщения при закрытии вкладки
-        let channel = null;
+        // === СОЗДАЁМ КАНАЛ ДЛЯ ОБЩЕНИЯ ===
+        var channel = null;
         try {
             channel = new BroadcastChannel('edit_channel');
-        } catch (e) {
-            // Игнорируем, если браузер не поддерживает
+        } catch (e) {}
+        
+        if (productIdValue) {
+            // Получаем текущий список из localStorage
+            var editingList = [];
+            try {
+                var data = localStorage.getItem('editing_product_ids');
+                editingList = data ? JSON.parse(data) : [];
+            } catch (e) {}
+            
+            // Добавляем ID, если его ещё нет
+            if (!editingList.includes(String(productIdValue))) {
+                editingList.push(String(productIdValue));
+                localStorage.setItem('editing_product_ids', JSON.stringify(editingList));
+                console.log('✅ Добавлен ID в список редактируемых:', productIdValue);
+            }
         }
         
-        // Отправляем сообщение при закрытии вкладки
-        window.addEventListener('beforeunload', function() {
-            if (productId && channel) {
-                channel.postMessage({
-                    type: 'edit_closed',
-                    productId: productId
-                });
-                console.log('📤 Отправлено сообщение о закрытии вкладки для ID:', productId);
-            }
-        });
-        
-        // Очищаем localStorage при сохранении
-        const saveBtn = document.getElementById('save-btn');
+        // === ОЧИЩАЕМ ID И ОТПРАВЛЯЕМ СООБЩЕНИЕ ПРИ СОХРАНЕНИИ ===
+        var saveBtn = document.getElementById('save-btn');
         if (saveBtn) {
             saveBtn.addEventListener('click', function() {
-                localStorage.removeItem('editing_product_id');
-                console.log('🗑️ localStorage очищен (сохранение)');
+                if (productIdValue) {
+                    var editingList = [];
+                    try {
+                        var data = localStorage.getItem('editing_product_ids');
+                        editingList = data ? JSON.parse(data) : [];
+                    } catch (e) {}
+                    editingList = editingList.filter(function(id) { return id !== String(productIdValue); });
+                    localStorage.setItem('editing_product_ids', JSON.stringify(editingList));
+                    
+                    if (channel) {
+                        channel.postMessage({
+                            type: 'edit_closed',
+                            productId: productIdValue
+                        });
+                    }
+                    console.log('🗑️ Удалён ID из списка редактируемых (сохранение):', productIdValue);
+                }
             });
         }
         
-        // Очищаем localStorage при отмене
-        const cancelBtn = document.getElementById('cancel-btn');
+        // === ОЧИЩАЕМ ID И ОТПРАВЛЯЕМ СООБЩЕНИЕ ПРИ ОТМЕНЕ ===
+        var cancelBtn = document.getElementById('cancel-btn');
         if (cancelBtn) {
             cancelBtn.addEventListener('click', function() {
-                localStorage.removeItem('editing_product_id');
-                console.log('🗑️ localStorage очищен (отмена)');
+                if (productIdValue) {
+                    var editingList = [];
+                    try {
+                        var data = localStorage.getItem('editing_product_ids');
+                        editingList = data ? JSON.parse(data) : [];
+                    } catch (e) {}
+                    editingList = editingList.filter(function(id) { return id !== String(productIdValue); });
+                    localStorage.setItem('editing_product_ids', JSON.stringify(editingList));
+                    
+                    if (channel) {
+                        channel.postMessage({
+                            type: 'edit_closed',
+                            productId: productIdValue
+                        });
+                    }
+                    console.log('🗑️ Удалён ID из списка редактируемых (отмена):', productIdValue);
+                }
             });
         }
+        
+        // === ПРИ ЗАКРЫТИИ ВКЛАДКИ ===
+        window.addEventListener('beforeunload', function() {
+            if (productIdValue) {
+                var editingList = [];
+                try {
+                    var data = localStorage.getItem('editing_product_ids');
+                    editingList = data ? JSON.parse(data) : [];
+                } catch (e) {}
+                editingList = editingList.filter(function(id) { return id !== String(productIdValue); });
+                localStorage.setItem('editing_product_ids', JSON.stringify(editingList));
+                console.log('🗑️ Удалён ID из списка редактируемых (закрытие вкладки):', productIdValue);
+            }
+        });
     });
 </script>
 {% endblock %}

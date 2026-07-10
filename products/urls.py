@@ -9,6 +9,7 @@ urlpatterns = [
     path('add/', views.product_add, name='product_add'),
     path('edit/<int:product_id>/', views.product_edit, name='product_edit'),
     path('delete/<int:product_id>/', views.product_delete, name='product_delete'),
+    path('product/<int:product_id>/', views.product_detail, name='product_detail'),
     
     # Корзина
     path('cart/', views.cart_view, name='cart'),
@@ -20,6 +21,7 @@ urlpatterns = [
     # Заказы
     path('order/create/', views.order_create, name='order_create'),
     path('order/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('order/<int:order_id>/pdf/', views.order_pdf, name='order_pdf'),
     path('my-orders/', views.my_orders, name='my_orders'),
     path('all-orders/', views.all_orders, name='all_orders'),
     path('order/manage/<int:order_id>/', views.order_manage, name='order_manage'),
@@ -27,4 +29,9 @@ urlpatterns = [
     # Профиль
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
+    
+    # Избранное
+    path('wishlist/', views.wishlist_view, name='wishlist'),
+    path('wishlist/add/<int:product_id>/', views.wishlist_add, name='wishlist_add'),
+    path('wishlist/remove/<int:product_id>/', views.wishlist_remove, name='wishlist_remove'),
 ]

@@ -109,6 +109,17 @@ class Product(models.Model):
     def has_orders(self):
         return self.orderitem_set.exists()
 
+    def get_average_rating(self):
+        """Возвращает средний рейтинг товара"""
+        reviews = self.reviews.all()
+        if reviews:
+            return sum(r.rating for r in reviews) / len(reviews)
+        return 0
+
+    def get_reviews_count(self):
+        """Возвращает количество отзывов"""
+        return self.reviews.count()
+
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
@@ -127,10 +138,8 @@ class Cart(models.Model):
         return f'Корзина {self.user.username}'
 
     def get_total(self):
-        """Возвращает общую сумму корзины с учётом скидок"""
         total = 0
         for item in self.items.all():
-            # Цена со скидкой за штуку × количество
             total += item.product.get_price_with_discount() * item.quantity
         return total
 
@@ -203,3 +212,46 @@ class OrderItem(models.Model):
     class Meta:
         verbose_name = 'Позиция заказа'
         verbose_name_plural = 'Позиции заказа'
+
+
+class Review(models.Model):
+    """
+    Отзыв на товар
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews', verbose_name='Товар')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    rating = models.IntegerField(
+        choices=[(i, f'{i} ★') for i in range(1, 6)],
+        verbose_name='Оценка'
+    )
+    text = models.TextField(verbose_name='Текст отзыва')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.product.name} - {self.rating}★'
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        ordering = ['-created_at']
+        unique_together = ['product', 'user']
+
+
+class Wishlist(models.Model):
+    """
+    Избранное пользователя
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wishlist', verbose_name='Пользователь')
+    products = models.ManyToManyField(Product, related_name='wishlisted_by', verbose_name='Товары в избранном')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    def __str__(self):
+        return f'Избранное {self.user.username}'
+
+    def get_count(self):
+        return self.products.count()
+
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'
